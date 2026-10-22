@@ -84,7 +84,7 @@ jobs:
           sha256sum --check services/SHA256SUMS
       - name: Commit changed rules
         run: |
-          git add games/aws-cidrs.txt games/aws-udp.json games/aws-udp.srs sources.json SHA256SUMS services/
+          git add games/ sources.json SHA256SUMS services/
           if git diff --cached --quiet; then
             echo "No selected prefix changes."
             exit 0

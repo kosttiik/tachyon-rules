@@ -29,6 +29,16 @@ class RulesTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             update.verify_roundtrip(actual, rule)
 
+    def test_qos_only_matches_udp_7770_on_selected_aws_prefixes(self):
+        rule, _ = update.prepare(self.source)
+        qos = update.qos_rule(rule)
+        self.assertEqual(qos["rules"][0]["network"], "udp")
+        self.assertEqual(qos["rules"][0]["port_range"], ["7770:7770"])
+        self.assertEqual(qos["rules"][0]["ip_cidr"], rule["rules"][0]["ip_cidr"])
+        update.verify_roundtrip(qos, qos)
+        with self.assertRaises(ValueError):
+            update.verify_roundtrip(rule, qos)
+
     def test_rejects_empty_private_and_malformed_sources(self):
         for prefixes in [[], [{"service": "EC2", "ip_prefix": "10.0.0.0/8"}], [{"service": "EC2", "ip_prefix": "broken"}]]:
             with self.subTest(prefixes=prefixes), self.assertRaises(ValueError):

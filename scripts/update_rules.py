@@ -42,6 +42,10 @@ def prepare(source):
     return rule, metadata
 
 
+def qos_rule(rule):
+    return {"version": 3, "rules": [{"network": "udp", "ip_cidr": rule["rules"][0]["ip_cidr"], "port_range": ["7770:7770"]}]}
+
+
 def verify_roundtrip(actual, expected):
     rules = actual["rules"]
     if len(rules) != 1 or set(rules[0]) != {"network", "ip_cidr", "port_range"}:
@@ -49,27 +53,32 @@ def verify_roundtrip(actual, expected):
     rule = rules[0]
     network = rule["network"] if isinstance(rule["network"], list) else [rule["network"]]
     ports = rule["port_range"] if isinstance(rule["port_range"], list) else [rule["port_range"]]
-    if network != ["udp"] or ports != ["1024:65535"] or set(rule["ip_cidr"]) != set(expected["rules"][0]["ip_cidr"]):
+    if network != ["udp"] or ports != expected["rules"][0]["port_range"] or set(rule["ip_cidr"]) != set(expected["rules"][0]["ip_cidr"]):
         raise ValueError("Compiled rule set did not preserve UDP, ports or prefixes")
 
 
 def main():
     with urllib.request.urlopen(SOURCE, timeout=60) as response:
         rule, metadata = prepare(json.load(response))
-    current = ROOT / "games/aws-udp.json"
-    if current.exists() and json.loads(current.read_text()) == rule:
+    rules = {"aws-udp": rule, "aws-qos": qos_rule(rule)}
+    metadata["qos_destination_ports"] = "7770"
+    if all((ROOT / f"games/{name}.json").exists() and json.loads((ROOT / f"games/{name}.json").read_text()) == value for name, value in rules.items()):
         print("Selected AWS prefixes unchanged; no rebuild or commit needed.")
         return
     with tempfile.TemporaryDirectory() as directory:
         stage = Path(directory)
         (stage / "games").mkdir()
-        (stage / "games/aws-udp.json").write_text(json.dumps(rule, indent=2) + "\n")
         (stage / "games/aws-cidrs.txt").write_text("\n".join(rule["rules"][0]["ip_cidr"]) + "\n")
         (stage / "sources.json").write_text(json.dumps(metadata, indent=2) + "\n")
-        subprocess.run(["sing-box", "rule-set", "compile", str(stage / "games/aws-udp.json"), "-o", str(stage / "games/aws-udp.srs")], check=True)
-        subprocess.run(["sing-box", "rule-set", "decompile", str(stage / "games/aws-udp.srs"), "-o", str(stage / "roundtrip.json")], check=True)
-        verify_roundtrip(json.loads((stage / "roundtrip.json").read_text()), rule)
-        files = ["games/aws-cidrs.txt", "games/aws-udp.json", "games/aws-udp.srs", "sources.json"]
+        files = ["games/aws-cidrs.txt", "sources.json"]
+        for name, value in rules.items():
+            source = stage / f"games/{name}.json"
+            binary = source.with_suffix(".srs")
+            source.write_text(json.dumps(value, indent=2) + "\n")
+            subprocess.run(["sing-box", "rule-set", "compile", str(source), "-o", str(binary)], check=True)
+            subprocess.run(["sing-box", "rule-set", "decompile", str(binary), "-o", str(stage / "roundtrip.json")], check=True)
+            verify_roundtrip(json.loads((stage / "roundtrip.json").read_text()), value)
+            files += [f"games/{name}.json", f"games/{name}.srs"]
         (stage / "SHA256SUMS").write_text("".join(f"{hashlib.sha256((stage / name).read_bytes()).hexdigest()}  {name}\n" for name in files))
         for name in [*files, "SHA256SUMS"]:
             shutil.copyfile(stage / name, ROOT / name)
