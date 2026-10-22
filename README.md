@@ -41,7 +41,7 @@ sing-box rule-set compile games/aws-udp.json -o games/aws-udp.srs
 
 ## Автоматическое обновление
 
-[Workflow Update AWS game rules](https://github.com/kosttiik/tachyon-rules/actions/workflows/update-aws-rules.yml) проверяет официальный источник AWS ежедневно в **04:23 UTC / 07:23 МСК**. Его также можно запустить через **Actions → Update AWS game rules → Run workflow**. Изменения скрипта, тестов или workflow запускают проверку автоматически.
+[Workflow Update routing rules](https://github.com/kosttiik/tachyon-rules/actions/workflows/update-aws-rules.yml) проверяет официальный источник AWS ежедневно в **04:23 UTC / 07:23 МСК**. Его также можно запустить через **Actions → Update routing rules → Run workflow**. Изменения скрипта, тестов или workflow запускают проверку автоматически.
 
 Если выбранные IPv4-подсети EC2/GLOBALACCELERATOR изменились, workflow пересобирает JSON, TXT и SRS, обновляет `sources.json` и `SHA256SUMS`, затем коммитит их в `main`. Если менялись только посторонние сервисы AWS или метаданные снимка, коммита нет. Дата в `sources.json` относится к последнему изменению выбранного набора, а не к последней проверке.
 
@@ -55,3 +55,11 @@ URL SRS для Tachyon остаётся тем же. Роутер получит
 python -m unittest discover -s tests -v
 python scripts/update_rules.py
 ```
+
+## Сервисные списки
+
+`services/youtube.srs` и `services/discord.srs` автоматически собираются из `Services/youtube.lst`, `Services/discord.lst`, `Subnets/IPv4/discord.lst` репозитория [itdoginfo/allow-domains](https://github.com/itdoginfo/allow-domains). Все входные файлы берутся из одного коммита; коммит и хеши записаны в `services/sources.json`. Рядом лежат читаемые JSON и контрольные суммы.
+
+Discord сохраняет ограничения из upstream `convert.py`: подсети Discord действуют только для **UDP 50000–65535**, а Cloudflare 104.16.0.0/12 дополнительно для **UDP 19000–20000**. TCP посторонних сайтов Cloudflare/Google под это правило не попадает. Не добавляйте исходные подсети отдельным условием или через прежний безусловный community subnet list. В Tachyon подключайте Discord как Rule set **с Include rule set IP ranges**, YouTube — так же; удалённые SRS дополняют видимые доменные условия. У All используются оба списка.
+
+Списки проверяются тем же ежедневным workflow; при изменении условий пересобираются с проверкой обратной декомпиляции. Исходные правила Ubisoft в эти списки не добавляются: они зависят от подключения и задаются отдельной Direct-секцией на роутере.
