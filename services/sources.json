@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/itdoginfo/allow-domains",
+  "commit": "05b56dab6aa3ae2b49f29c87635c651969a0caa8",
+  "files": {
+    "Services/youtube.lst": "71fac5162d67fce8ffd0be6287de6f9159507abdab21573eb3eda813641582c2",
+    "Services/discord.lst": "2f18f3671d1b40ad936929d87012a5dcc639368a32cb660220773a2084cdc5e8",
+    "Subnets/IPv4/discord.lst": "63b7993720bb2db42a70d52d6bbb87e918f9f2cb7cedd32670b32da2f92815ed"
+  },
+  "discord_port_policy": "Upstream convert.py: UDP 50000-65535 for Discord IPv4; UDP 19000-20000 for 104.16.0.0/12. No unrestricted IP rule.",
+  "ipv6": false
+}
