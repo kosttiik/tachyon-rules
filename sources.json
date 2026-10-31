@@ -1,14 +1,14 @@
 {
   "source": "https://ip-ranges.amazonaws.com/ip-ranges.json",
-  "source_create_date": "2026-10-30-07-47-05",
-  "source_sync_token": "1793346425",
+  "source_create_date": "2026-10-31-07-27-05",
+  "source_sync_token": "1793431625",
   "services": [
     "EC2",
     "GLOBALACCELERATOR"
   ],
   "regions": "all",
   "address_family": "IPv4",
-  "collapsed_prefix_count": 757,
+  "collapsed_prefix_count": 758,
   "network": "udp",
   "destination_ports": "1024-65535",
   "format_version": 3,
